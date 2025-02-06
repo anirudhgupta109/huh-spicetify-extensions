@@ -543,6 +543,32 @@
             )
         );
     };
+    const getTracks = async (uri) => {
+        if (uri === Spicetify.URI.LIBRARY_URI) {
+            const tracks = await Spicetify.LibraryAPI.getTracks();
+            return tracks.map(track => ({ ...track, uri: track.uri }));
+        } else {
+            const contents = await Spicetify.Platform.PlaylistAPI.getContents(uri);
+            return contents.items;
+        }
+    };
+
+    const getMetadata = async (uri) => {
+        if (uri === Spicetify.URI.LIBRARY_URI) {
+            const tracks = await Spicetify.LibraryAPI.getTracks();
+            return {
+                name: "Liked Songs",
+                isCollaborative: false,
+                description: null,
+                images: [{ url: "https://misc.scdn.co/liked-songs/liked-songs-64.png" }],
+                owner: { displayName: "Your Library", uri: "" },
+                totalLength: tracks.length,
+                uri: uri
+            };
+        } else {
+            return await Spicetify.Platform.PlaylistAPI.getMetadata(uri);
+        }
+    };
 
     async function intersect() {
         play1 = LocalStorage.get("spicetify-interplaylist1");
@@ -552,8 +578,8 @@
         LocalStorage.remove("spicetify-interplaylist1");
         LocalStorage.remove("spicetify-interplaylist2");
 
-        const tracks1 = (await Spicetify.Platform.PlaylistAPI.getContents(play1)).items;
-        const tracks2 = (await Spicetify.Platform.PlaylistAPI.getContents(play2)).items;
+        const tracks1 = await getTracks(play1);
+        const tracks2 = await getTracks(play2);
 
         commonTracks = trackIntersection(tracks1, tracks2);
 
@@ -562,9 +588,9 @@
             return;
         }
 
-        const meta1 = await Spicetify.Platform.PlaylistAPI.getMetadata(play1);
+        const meta1 = await getMetadata(play1);
         name1 = meta1.name;
-        const meta2 = await Spicetify.Platform.PlaylistAPI.getMetadata(play2);
+        const meta2 = await getMetadata(play2);
         name2 = meta2.name;
 
         Spicetify.Platform.History.push(`/playlist/${meta1.uri.split(":")[2]}`);
@@ -781,7 +807,7 @@
                 return false;
             }
             const uriObj = Spicetify.URI.fromString(uris[0]);
-            if (uriObj.type == Spicetify.URI.Type.PLAYLIST || uriObj.type == Spicetify.URI.Type.PLAYLIST_V2) {
+            if (uriObj.type == Spicetify.URI.Type.PLAYLIST || uriObj.type == Spicetify.URI.Type.PLAYLIST_V2 || uriObj.type === Spicetify.URI.Type.COLLECTION) {
                 return true;
             }
             return false;
@@ -807,7 +833,7 @@
                 return false;
             }
             const uriObj = Spicetify.URI.fromString(uris[0]);
-            if (uriObj.type == Spicetify.URI.Type.PLAYLIST || uriObj.type == Spicetify.URI.Type.PLAYLIST_V2) {
+            if (uriObj.type == Spicetify.URI.Type.PLAYLIST || uriObj.type == Spicetify.URI.Type.PLAYLIST_V2 || uriObj.type === Spicetify.URI.Type.COLLECTION) {
                 return true;
             }
             return false;
